@@ -7,7 +7,7 @@ categories: 论文笔记
 
 ## 比较
 
-![image-20260516175828010](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20260516175828010.png)
+![image-20260516175828010](https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260516175828010.png)
 
 ## 和HM3Dsem的比较
 

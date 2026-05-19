@@ -7,7 +7,7 @@ categories: 论文笔记
 
 ## 解释的图
 
-![image-20260513211643735](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20260513211643735.png)
+![image-20260513211643735](https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260513211643735.png)
 
 ---
 

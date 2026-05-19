@@ -1,0 +1,10 @@
+# Friend Links
+- name: Butterfly
+  link: https://butterfly.js.org/
+  avatar: https://butterfly.js.org/img/butterfly-icon.png
+  descr: Butterfly Theme for Hexo
+
+- name: Hexo
+  link: https://hexo.io/
+  avatar: https://hexo.io/icon/favicon-196x196.png
+  descr: A fast, simple & powerful blog framework

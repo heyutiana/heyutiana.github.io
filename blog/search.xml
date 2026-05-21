@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search> 
+  
+  
+    
+    <entry>
+      <title>ABot-Explorer 阅读笔记</title>
+      <link href="/blog/2026/05/19/ABot-Explorer-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/"/>
+      <url>/blog/2026/05/19/ABot-Explorer-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/</url>
+      
+        <content type="html"><![CDATA[<blockquote><p>Explore like humans: Autonomous exploration with online SG-Memo construction for embodied agents<br>Chen 等, 2026</p></blockquote><hr><h2 id="一、一句话总结"><a href="#一、一句话总结" class="headerlink" title="一、一句话总结"></a>一、一句话总结</h2><blockquote><p>用 <strong>Qwen2.5-VL-3B 从 RGB 图像中在线联合预测 SNA</strong>，解决 <strong>纯几何探索缺乏语义结构理解导致错过关键过渡节点</strong> 的问题，<br>在 <strong>InteriorGS &#x2F; HM3D &#x2F; MP3D</strong> 上达到 <strong>最佳节点覆盖率（CR_topo&#x3D;89%, unseen InteriorGS）和 SG-Memo 构建质量（Room Coverage&#x3D;92%）</strong>。</p></blockquote><hr><h2 id="二、要解决的问题（过去方法缺陷）"><a href="#二、要解决的问题（过去方法缺陷）" class="headerlink" title="二、要解决的问题（过去方法缺陷）"></a>二、要解决的问题（过去方法缺陷）</h2><ol><li>探索与建图 <strong>解耦（两阶段）</strong> → 先跑轨迹再 <strong>离线</strong> 建图，探索阶段无法用记忆指导行为</li><li>依赖纯 <strong>几何</strong> 前沿点 → 无法区分门&#x2F;墙&#x2F;楼梯，错过 <strong>结构性过渡</strong> 节点（门框、楼梯口等）</li><li>记忆结构中 <strong>房间</strong> 和 <strong>物体</strong> 作独立节点 → 缺乏以 SNA 为骨干的语义分层记忆</li></ol><hr><h2 id="三、核心方法（每个模块：做什么-为什么需要）"><a href="#三、核心方法（每个模块：做什么-为什么需要）" class="headerlink" title="三、核心方法（每个模块：做什么 + 为什么需要）"></a>三、核心方法（每个模块：做什么 + 为什么需要）</h2><table><thead><tr><th>模块</th><th>做什么（输入→处理→输出）</th><th>为什么需要（没有会怎样）</th></tr></thead><tbody><tr><td><strong>VLM 联合预测</strong> (Qwen2.5-VL-3B)</td><td>RGB 图 → 一次推理 → SNA <strong>2D坐标 + 可导航边 + 语义标签</strong> + 房间类别 + 物体列表</td><td>没有则需多个独立模块（检测+分类+图连接），易累积误差</td></tr><tr><td><strong>SG-Memo</strong> (G&#x3D;V+E)</td><td>新 SNA → 加入顶点 V &#x2F; 新连接 → 加入边 E；每顶点附带{类型,房间,物体}</td><td>没有则探索结果无法被下游任务（导航&#x2F;问答）复用</td></tr><tr><td><strong>SNA 优先级子目标</strong></td><td><strong>楼梯 &gt; 房间入口 &gt; 交叉口 &gt; 普通节点</strong></td><td>纯几何前沿点会乱走或漏房间，无法像人类按结构层次高效覆盖</td></tr><tr><td><strong>在线闭环</strong></td><td>看（拍RGB）→ <strong>想（VLM推理）→ 记（更新SG-Memo）→ 选（优先级子目标）→ 走（导航）</strong> → 循环</td><td>没有则探索与建图割裂，如同先盲走再事后补图</td></tr></tbody></table><hr><h2 id="四、关键实验结果"><a href="#四、关键实验结果" class="headerlink" title="四、关键实验结果"></a>四、关键实验结果</h2><table><thead><tr><th>项目</th><th>内容</th></tr></thead><tbody><tr><td>主数据集</td><td><strong>InteriorGS</strong>（1,000 室内场景），训练+测试</td></tr><tr><td>泛化评估</td><td>HM3D（145 场景，含多楼层），MP3D（34 场景）</td></tr><tr><td>对比基线</td><td>RRT, GLEAM, CogniPlan</td></tr><tr><td>最佳指标（unseen InteriorGS）</td><td>CR_occ&#x3D;<strong>79%</strong>, CR_topo&#x3D;<strong>89%</strong>, AUC_occ&#x3D;<strong>60%</strong>, AUC_topo&#x3D;<strong>70%</strong></td></tr><tr><td>MP3D（未见）最优</td><td>CR_occ&#x3D;<strong>86%</strong>, CR_topo&#x3D;<strong>85%</strong></td></tr><tr><td>SG-Memo 质量（Table II）</td><td>Room Coverage&#x3D;<strong>92%</strong>, Room Type Acc&#x3D;<strong>90%</strong>, Object Recall&#x3D;<strong>81%</strong></td></tr><tr><td>关键消融</td><td>去掉 <strong>在线 VLM 语义预测（两阶段管线）</strong> 导致 Room Coverage 从 92%→89%、ObjNav SR 从 80%→33%，说明 <strong>VLM 在线联合预测</strong> 最关键</td></tr><tr><td>跨楼层（Table IV）</td><td>HM3D 多楼层: Completeness&#x3D;<strong>72%</strong>, Efficiency&#x3D;<strong>74%</strong></td></tr></tbody></table><hr><h2 id="五、我的理解"><a href="#五、我的理解" class="headerlink" title="五、我的理解"></a>五、我的理解</h2><ul><li><p><strong>核心创新</strong>：过去方法 &#x3D; <strong>先轨迹后离线建图，两阶段割裂</strong> 且 <strong>纯几何前沿点无语义</strong>。<br>本文 &#x3D; <strong>VLM 一步联合预测 SNA，在线闭环构建 SG-Memo 并驱动探索</strong>，通过 <strong>SNA 作为统一记忆+导航锚点、优先级模拟人类结构逻辑</strong> 解决。</p></li><li><p><strong>弱点1（依赖什么）</strong>：依赖 VLM（Qwen2.5-VL-3B）的 SFT 微调；换其他 VLM 需重新训练</p></li><li><p><strong>弱点2（在哪儿测的）</strong>：主要在 Habitat 模拟器 + InteriorGS&#x2F;HM3D&#x2F;MP3D 资产上评估；真实环境仅在 MagicDog 四足机器人上做定性演示</p></li><li><p><strong>弱点3（没做什么）</strong>：未处理动态环境（移动物体、开关门）；未与无地图导航方法（如 PointNav）深度对比；未探索 zero-shot VLM 方案</p></li><li><p><strong>弱点4（假设太理想）</strong>：VLM 假设每帧至少能看到一个 SNA 节点；RGB-only 在极暗&#x2F;无纹理环境会失效</p></li><li><p><strong>对我的启发</strong>：这篇告诉我 <strong>用语义结构节点（而非几何前沿点）可以统一记忆与导航</strong>。<br>我可以用在 <strong>需要探索后做语义推理的任务（如”去厨房拿杯子”）</strong>，具体是：<strong>先让机器人按 SNA 优先级覆盖全空间建立 SG-Memo，再在 SG-Memo 上做目标导航，避免传统端到端导航的盲目性</strong>。</p></li></ul><hr><h2 id="六、机器人视角"><a href="#六、机器人视角" class="headerlink" title="六、机器人视角"></a>六、机器人视角</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">我是被放在 InteriorGS 室内场景入口的 ABot-Explorer。</span><br><span class="line"></span><br><span class="line">第1步：我用摄像头拍摄当前位置的 RGB 图像。</span><br><span class="line">第2步：VLM（Qwen2.5-VL-3B）看到这张 RGB 图，一次推理输出图中所有 SNA（门、楼梯、交叉口）的 2D 坐标、</span><br><span class="line">       哪些 SNA 互相连通、以及每个 SNA 的房间类型和附近物体。</span><br><span class="line">第3步：我把新 SNA 加进 SG-Memo 的顶点集 V，把新连通关系加进边集 E，每个节点存好&#123;类型, 房间, 物体&#125;。</span><br><span class="line">第4步：我遍历 SG-Memo 中所有未访问的 SNA，按 楼梯 &gt; 房间入口 &gt; 交叉口 &gt; 普通节点 排名，</span><br><span class="line">       选优先级最高的那个作为下一个子目标。</span><br><span class="line">第5步：导航模块带我走到这个子目标。</span><br><span class="line">第6步：回到第1步，重复整个循环。</span><br><span class="line">最后：没有未访问的 SNA 了，我的 SG-Memo 建完了——每个房间、每个楼梯、每个角落都在图中有记录。</span><br><span class="line">       这个图可以喂给下游任务：目标导航、物体查找、空间问答都可以直接用。</span><br></pre></td></tr></table></figure><hr><h2 id="七、待查问题"><a href="#七、待查问题" class="headerlink" title="七、待查问题"></a>七、待查问题</h2><ul><li><input disabled="" type="checkbox"> VLM 的训练数据如何标注？SNA坐标的标注精度几何？（Sec 3.D &#x2F; Appendix）</li><li><input disabled="" type="checkbox"> SG-Memo 的图规模在1000场景中平均多少个节点&#x2F;边？（Sec 4 实验统计）</li><li><input disabled="" type="checkbox"> 如果 VLM 漏检某个SNA（如远处暗门），探索是否有回访&#x2F;重扫描机制？（Sec 3.E）</li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 论文笔记 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 论文阅读 </tag>
+            
+            <tag> 具身智能 </tag>
+            
+            <tag> 探索 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>HM3D阅读笔记</title>
+      <link href="/blog/2026/05/19/HM3D-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/"/>
+      <url>/blog/2026/05/19/HM3D-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/</url>
+      
+        <content type="html"><![CDATA[<h2 id="图"><a href="#图" class="headerlink" title="图"></a>图</h2><!--对比 --><p><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260514191839911.png" alt="image-20260514191839911"></p><hr><!-- 数据集对比表 Table 1 --><p><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260515141411592.png" alt="image-20260515141411592"></p><hr><!-- 视觉保真度对比 Figure 5 --><p><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260515141525587.png" alt="image-20260515141525587"></p><h2 id="一句话总结"><a href="#一句话总结" class="headerlink" title="一句话总结"></a>一句话总结</h2><p>用 Matterport Pro2传感器扫描+两阶段人工筛选，解决室内3D数据集规模小、重建不完整、视觉保真度差的问题，在PointNav任务上训练的代理在Gibson测试集达到100%成功率。</p><h2 id="要解决的问题"><a href="#要解决的问题" class="headerlink" title="要解决的问题"></a>要解决的问题</h2><ol><li>规模小：MP3D仅90个场景，Gibson高质量仅106个，不够训练强代理</li><li>完整度低：Gibson等存在大量重建伪影（空洞、裂缝），560&#x2F;571个场景有缺陷</li><li>保真度差：渲染图像与真实照片差距大，ScanNet的FID高达126.7</li></ol><h2 id="核心方法（三个模块）"><a href="#核心方法（三个模块）" class="headerlink" title="核心方法（三个模块）"></a>核心方法（三个模块）</h2><table><thead><tr><th>模块</th><th>做什么</th><th>为什么需要</th></tr></thead><tbody><tr><td>数据采集</td><td>用Matterport Pro2三脚架深度传感器扫描真实室内环境，获得RGB-D数据，经对齐、网格化、纹理处理得到3D网格重建</td><td>不用真实扫描就只能用合成场景或启发式转换，都不够真实</td></tr><tr><td>数据筛选</td><td>第一阶段：15名志愿者1-5分评分（看伪影、家具密度、关门数、交互潜力、导航连通性）；第二阶段：3名专家按排名筛选并保持多样性</td><td>不筛选的话会混入低质量扫描（空洞、门关着进不去），影响训练效果</td></tr><tr><td>数据特性</td><td>提供1000个场景、112.5km²可导航空间、FID&#x3D;20.5（最低）、560个场景缺陷&lt;5%</td><td>规模大→泛化好，完整度高→训练稳定，保真度高→sim-to-real差距小</td></tr></tbody></table><h2 id="关键实验结果"><a href="#关键实验结果" class="headerlink" title="关键实验结果"></a>关键实验结果</h2><ul><li>最佳结果：Gibson(test)上，深度传感器下Success&#x3D;100%，SPL&#x3D;93%</li><li>数据扩展实验：训练数据量与PointNav性能近线性关系，HM3D(10%→50%→100%)性能持续上升，验证了具身AI领域的数据扩展假设</li><li>相关性分析：可导航面积与SPL相关性最高（+0.82~+0.97），说明数据规模是关键因素</li><li>HM3D训练的代理在困难episode上泛化更好，因为HM3D布局复杂多样</li><li>HM3D代理在Gibson(test)上达到100%成功率，论文建议Gibson数据集可以”退休”了</li></ul><h2 id="我的理解"><a href="#我的理解" class="headerlink" title="我的理解"></a>我的理解</h2><ul><li><p>核心创新：首次提供1000个大规模、高完整度、高保真度的真实室内3D重建，并用实验证明数据规模对具身AI性能的关键作用</p></li><li><p>不足之处：</p><ol><li>数据偏差：仅38个国家，需要花3000美元买传感器，贫穷地区覆盖不足</li><li>无语义标注：不支持ObjectNav等语义任务</li><li>静态环境：没有人走动，物体不会移动，与真实世界有差距</li></ol></li><li><p>对我的启发：</p><ol><li><p>HM3D是目前ObjectNav最常用的训练数据集之一，我的任务可以直接用它</p></li><li><p>数据规模是性能关键——可导航面积与SPL相关性+0.97，做ObjectNav也应该关注训练数据量和多样性</p></li><li><p>HM3D目前没有语义标注，这恰恰是ObjectNav需要的，可以考虑用开放词汇检测器（如RAM）自动生成伪标签</p></li></ol></li></ul><h2 id="疑问"><a href="#疑问" class="headerlink" title="疑问"></a>疑问</h2>]]></content>
+      
+      
+      <categories>
+          
+          <category> 论文笔记 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 论文阅读 </tag>
+            
+            <tag> 数据集 </tag>
+            
+            <tag> 3D场景 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>CONSISTNAV导航</title>
+      <link href="/blog/2026/05/19/CONSISTNAV-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/"/>
+      <url>/blog/2026/05/19/CONSISTNAV-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/</url>
+      
+        <content type="html"><![CDATA[<hr><h2 id="图"><a href="#图" class="headerlink" title="图"></a>图</h2><p><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260518110642316.png" alt="image-20260518110642316"></p><hr><p><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260518110713582.png" alt="image-20260518110713582"></p><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul><li>提出了一种零样本导航方法ConsistNav，针对动作一致性差距（检测到目标但行动不一致），通过PCM+FSEC+SAAC三个无需训练的执行模块，在不改动感知和规划层的前提下，在mp3d数据集上达到了SOTA。</li></ul><h2 id="要解决的问题"><a href="#要解决的问题" class="headerlink" title="要解决的问题"></a>要解决的问题</h2><p>存在<strong>动作一致性差距</strong>，语义证据每一步都被重新解读，导致以下问题</p><ol><li><strong>探索与追踪摇摆</strong>：一会追，一会不追。</li><li><strong>接近成功时放弃目标</strong>：快到了就放弃。</li><li><strong>未验证就停止</strong>：没有把语义证据转换为持续的行动承诺</li></ol><h2 id="核心方法"><a href="#核心方法" class="headerlink" title="核心方法"></a>核心方法</h2><p>ConsistNav 是一种<strong>无需训练的零样本目标导航框架</strong>，核心思想是在<strong>感知层和规划层之间插入一个语义执行器</strong>，不改动检测器和规划器，仅控制语义证据何时影响导航。</p><table><thead><tr><th>模块</th><th>缩写</th><th>职责</th><th>关键机制</th></tr></thead><tbody><tr><td>持久候选记忆</td><td>PCM</td><td>跨帧累积语义证据，形成稳定目标假设</td><td>非对称置信度更新、正负证据计数、一致性分数排序</td></tr><tr><td>有限状态执行控制器</td><td>FSEC</td><td>控制”搜→追→验→停”的承诺节奏</td><td>7 状态状态机 + 守卫条件（公式 9-11）</td></tr><tr><td>稳定性感知动作控制</td><td>SAAC</td><td>过滤不稳定低级动作</td><td>防旋转、停滞检测、有限恢复、验证性停止</td></tr></tbody></table><h2 id="关键实验结果"><a href="#关键实验结果" class="headerlink" title="关键实验结果"></a>关键实验结果</h2><p>三数据集对比：</p><table><thead><tr><th>数据集</th><th>SR</th><th>SPL</th></tr></thead><tbody><tr><td>HM3Dv2</td><td>84.2</td><td>41.2</td></tr><tr><td>HM3Dv1</td><td>63.2</td><td>34.8</td></tr><tr><td>MP3D</td><td>50.6</td><td>25.7</td></tr></tbody></table><p>消融实验（三模块的各自贡献）</p><table><thead><tr><th>配置</th><th>SR</th><th>增量</th></tr></thead><tbody><tr><td>非执行基线</td><td>76.20</td><td>—</td></tr><tr><td>+PCM</td><td>77.10</td><td>+0.90</td></tr><tr><td>+FSEC</td><td>81.00</td><td>+3.90</td></tr><tr><td>+SAAC（完整）</td><td>84.20</td><td>+3.20</td></tr></tbody></table><h2 id="进行导航过程"><a href="#进行导航过程" class="headerlink" title="进行导航过程"></a>进行导航过程</h2><p><strong>SEARCH</strong> → 前沿探索，边走边检测目标<br>  ↓  PCM 累积证据过守卫条件（证据有检测结果{正\反}，匹配分数{ITM},持续性{一致性分            ↓ 数}<br><strong>SUSPECT</strong> → 锁定一个候选，不再到处看<br>  ↓  候选排名稳定且距离够近<br><strong>APPROACH</strong> → 朝候选目标走过去<br>  ↓  进入验证半径<br><strong>VERIFY</strong> → 多角度确认”是不是真的是它”<br>  ↓  多重线索一致（公式 11）<br><strong>FINAL-APPROACH</strong> → 最终靠近<br>  ↓<br><strong>SUCCESS</strong> → STOP<br>中途失败 → <strong>FAILOVER</strong> → 标记失败候选，回 SEARCH 重来</p><h2 id="自己的理解"><a href="#自己的理解" class="headerlink" title="自己的理解"></a>自己的理解</h2><p>积累：</p><ol><li><strong>开放词汇检测器</strong>为零样本对象导航提供了目标语义<strong>感知能力</strong>，使智能体能够在未见类别和自由文本目标条件下识别候选目标</li><li><strong>语义证据</strong>（semantic evidence）就是感知模块每帧输出的”这里是不是有目标”的信号。</li></ol><p>这篇文章的优势：</p><ol><li><strong>不调用LLM</strong>:避免每个决策步骤都跑一次大模型。</li><li><strong>纯规则驱动</strong>：FSEC确定状态转移，PCM简单数值更新，SAAC通过计算器和与之判断。</li><li><strong>即插即用</strong>：不改动检测器和规划器。</li></ol><h2 id="疑问"><a href="#疑问" class="headerlink" title="疑问"></a>疑问</h2>]]></content>
+      
+      
+      <categories>
+          
+          <category> 论文笔记 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 论文阅读 </tag>
+            
+            <tag> 导航 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>REST 阅读笔记</title>
+      <link href="/blog/2026/05/19/REST-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/"/>
+      <url>/blog/2026/05/19/REST-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/</url>
+      
+        <content type="html"><![CDATA[<h2 id="解释的图"><a href="#解释的图" class="headerlink" title="解释的图"></a>解释的图</h2><p><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260513211643735.png" alt="image-20260513211643735"></p><hr><p><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260513211725675.png" alt="image-20260513211725675"></p><h2 id="一句话总结"><a href="#一句话总结" class="headerlink" title="一句话总结"></a>一句话总结</h2><p>用*RT-RRT 路径树 + 斯坦纳树压缩+LLM子树打分解决零样本物体导航中逐点排序导致的冗余探索问题，在HM3D v1上达到 SR&#x3D;57.3%, SPL&#x3D;33.4%。</p><h2 id="要解决的问题"><a href="#要解决的问题" class="headerlink" title="要解决的问题"></a>要解决的问题</h2><ol><li><p>点排序冗余</p><blockquote><p>以前的方法（如 VLFM）对每个<strong>航路点</strong>单独打分，不知道哪些航路点共享同一条路径，导致 LLM 重复评估相似选项</p></blockquote></li><li><p>LLM不知道走哪条路</p><blockquote><p>LLM只看到一个个孤立的航路点，<strong>看不到拓扑结构（比如”左边是走廊，右边是客厅”）</strong>，无法做方向级决策</p></blockquote></li><li><p>决策粒度太细</p><blockquote><p>每走一步都要调用 LLM，太慢太贵，而且在走廊等简单路段是浪费</p></blockquote></li></ol><h2 id="核心方法"><a href="#核心方法" class="headerlink" title="核心方法"></a>核心方法</h2><table><thead><tr><th>模块</th><th>做什么</th><th>为什么需要</th><th>没有会怎么样</th></tr></thead><tbody><tr><td>RT-RRT*</td><td>实时生成无碰撞路径树，以智能体为根</td><td>提供全局路径规划，不是逐点算</td><td>没有全局路径，机器人乱走</td></tr><tr><td>信息丰富视点采样</td><td>从路径树中挑出能看到未知区域的点</td><td>告诉 LLM”哪些地方值得去探索”</td><td>LLM不知道哪些地方值得去</td></tr><tr><td>斯坦纳树优化</td><td>合并冗余路径，压缩成主干-分支-叶子结构</td><td>减少总路径长度，压缩决策树</td><td>路径冗余，LLM会看到一大堆重复选项</td></tr><tr><td>树叙述</td><td>逐边标注 → 组装 → 子树摘要，转成自然语言</td><td>让 LLM 能”看懂”路径树</td><td>LLM只看到坐标看不到拓扑结构</td></tr><tr><td>LLM 子树打分</td><td>LLM 对每个子树打 0-100 分，选最高分</td><td>让 LLM 做方向级决策，不是逐点排序</td><td>类似clip采用余弦相似度排序，看不到方向级信息</td></tr></tbody></table><h2 id="关键实验结果"><a href="#关键实验结果" class="headerlink" title="关键实验结果"></a>关键实验结果</h2><ul><li><p>最佳结果：</p><p>HM3D v1 上 SR&#x3D;57.3%, SPL&#x3D;33.4%（SPL 最高）<br>HSSD 上 SR&#x3D;56.7%, SPL&#x3D;29.1%（两项都领先）</p></li><li><p>消融发现：</p><p>去掉 LLM 推理：SR 从 56.7% 降到 29.1%（掉了 27.6%）<br>→ 说明 LLM 方向级决策是核心，没有它机器人就像无头苍蝇<br>去掉斯坦纳树：SR 从 56.7% 降到 53.1%（掉了 3.6%）<br>→ 说明压缩路径树有帮助，但不是最关键的</p></li><li><p>关键参数：</p><p>体素大小 &#x3D; 5cm <!--地图的"分辨率"，每个小方块 5cm，越小地图越精细，但计算量越大--><br>信息增益阈值  &#x3D; 10<!--一个视点能看到多少未知区域才算"值得去"，低于 10 就忽略--><br>信息丰富视点间距 &#x3D; 1.25m<!--用泊松盘采样控制视点之间的最小距离，太近会重复，太远会遗漏--></p></li></ul><h2 id="进行导航的过程"><a href="#进行导航的过程" class="headerlink" title="进行导航的过程"></a>进行导航的过程</h2><blockquote><p>任务是在陌生房子里找”床”。我站在客厅门口，用 RT-RRT* 扫出一棵路径树，发现左边是厨房、中间是走廊、右边是卫生间，然后系统用斯坦纳树把共享路段合并压缩，再把每条分支转成自然语言交给 LLM 打分——厨房 20 分、走廊 80 分、卫生间 15 分，我选最高分，沿着走廊一直走不用再问 LLM，走到走廊尽头分叉口，RT-RRT* 重新以我为中心生成树，斯坦纳树再压缩，树叙述说”左边看到一个卧室门”，LLM 打 90 分，我左转走进卧室，扫一圈看到了床，停止，任务完成</p></blockquote><h2 id="我的理解"><a href="#我的理解" class="headerlink" title="我的理解"></a>我的理解</h2><ul><li><p>核心创新：把原来评价一个导航点，改为评价一条路</p></li><li><p>不足之处：玻璃问题du</p></li><li><p>对我的启发：</p><p>斯坦纳树：允许在路径中间添加额外点（斯坦纳点），减少总路径长度。</p><p>RT-RRT* 实时版，机器人可以一边走一边重新以当前位置为根”重新拉”这棵树</p></li></ul><h2 id="疑问"><a href="#疑问" class="headerlink" title="疑问"></a>疑问</h2><ol><li><p>沿每条边模拟一个虚拟相机，查询地图获取可见内容？</p></li><li><p>怎么选择每个节点：</p><p>把多条路的共享段合并，只在需要分叉的地方才分开</p></li></ol>]]></content>
+      
+      
+      <categories>
+          
+          <category> 论文笔记 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 论文阅读 </tag>
+            
+            <tag> 具身导航 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>HSSD-200 阅读笔记</title>
+      <link href="/blog/2026/05/19/HSSD-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/"/>
+      <url>/blog/2026/05/19/HSSD-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/</url>
+      
+        <content type="html"><![CDATA[<h2 id="比较"><a href="#比较" class="headerlink" title="比较"></a>比较</h2><p><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260516175828010.png" alt="image-20260516175828010"></p><h2 id="和HM3Dsem的比较"><a href="#和HM3Dsem的比较" class="headerlink" title="和HM3Dsem的比较"></a>和HM3Dsem的比较</h2><p><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260516180429375.png" alt="image-20260516180429375"></p><h2 id="HM3D和HM3Dsem的比较"><a href="#HM3D和HM3Dsem的比较" class="headerlink" title="HM3D和HM3Dsem的比较"></a>HM3D和HM3Dsem的比较</h2><p><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260516180740741.png" alt="image-20260516180740741"></p><h2 id="一句话总结"><a href="#一句话总结" class="headerlink" title="一句话总结"></a>一句话总结</h2><p>用构建高质量合成3D场景数据集HSSD-200+ 系统性规 vs真实感对比实验的方法，解决合成数据集的规模和真实感哪个更影响ObjectNav智能体泛化的问题，实现 122 个 HSSD 场景训练的智能体在真实扫描场景上零样本泛化优于10,000个ProcTHOR场景。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 论文笔记 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 论文阅读 </tag>
+            
+            <tag> 数据集 </tag>
+            
+            <tag> 3D场景 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>ReMemNav阅读笔记</title>
+      <link href="/blog/2026/05/19/ReMemNav-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/"/>
+      <url>/blog/2026/05/19/ReMemNav-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/</url>
+      
+        <content type="html"><![CDATA[<h2 id="图"><a href="#图" class="headerlink" title="图"></a>图</h2><p><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260513212502949.png" alt="image-20260513212502949"></p><hr><p><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260513212522758.png" alt="image-20260513212522758"></p><hr><p><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260513212544029.png" alt="image-20260513212544029"></p><h2 id="一句话总结"><a href="#一句话总结" class="headerlink" title="一句话总结"></a>一句话总结</h2><p>用 RAM语义锚定+情景记忆队列+双模态反思机制，解决零样本物体导航中的空间幻觉和局部死锁问题，在HM3Dv0.2上达到67.8%成功率。</p><h2 id="要解决的问题"><a href="#要解决的问题" class="headerlink" title="要解决的问题"></a>要解决的问题</h2><ol><li>空间幻觉：VLM看到墙上的花纹以为是电视机，会认错东西</li><li>局部思索：机器人会在房间转圈，不能走出来</li><li>没有记忆：不知道自己曾去过哪些地方</li></ol><h2 id="核心方法（三个模块）"><a href="#核心方法（三个模块）" class="headerlink" title="核心方法（三个模块）"></a>核心方法（三个模块）</h2><table><thead><tr><th>模块</th><th>做什么</th><th>为什么需要</th></tr></thead><tbody><tr><td>RAM</td><td>扫描每个方向，输出“电视机，沙发”的标签</td><td>做一个清单，减少瞎猜</td></tr><tr><td>记忆队列</td><td>记住最近的步数长什么样子</td><td>防止走回头路</td></tr><tr><td>反思机制</td><td>模式A检查是否绕圈，模式B检查目标的真假</td><td>防止死锁，防止找错目标，模式B在一定程度上解决镜面反射问题</td></tr></tbody></table><h2 id="关键实验结果"><a href="#关键实验结果" class="headerlink" title="关键实验结果"></a>关键实验结果</h2><ul><li>最佳SR&#x2F;SPL：HM3Dv0.2上 SR&#x3D;67.8%, SPL&#x3D;36.6%</li><li>消融实验发现：<ol><li>只加RAM反而掉点，因为标签太多没有验证机制</li><li>加上反思机制后大涨，说明反思关键</li></ol></li><li>记忆容量K&#x3D;：10，记忆太多会有一些杂七杂八的记忆，会过载</li></ul><h2 id="导航的过程"><a href="#导航的过程" class="headerlink" title="导航的过程"></a>导航的过程</h2><blockquote><p>我是机器人，任务是在陌生房子里找”电视”。我站在客厅门口，先朝六个方向各拍一张 RGB-D 照片，然后 RAM 帮我快速扫描：角度 30° 有沙发和茶几、角度 90° 有电视和扶手椅、角度 210° 有餐桌和椅子、其余方向是一些家具。我把这些标签和全景图一起交给 VLM，VLM 说”角度 90° 可能看到电视，但我还不确定”，所以 f_goal&#x3D;False，走 90° 方向。系统检查记忆队列，发现这个方向我之前没走过，没问题，执行模式 A 继续探索。走了一步，再拍六张照片，RAM 说角度 90° 确实有电视，VLM 这次说”我看到电视了”，f_goal&#x3D;True，切到模式 B，系统不信它，把角度 90° 那张图单独再交给 VLM 细看，VLM 确认”确实是电视，不是幻觉”，验证通过，停止，任务完成。</p></blockquote><h2 id="我的理解"><a href="#我的理解" class="headerlink" title="我的理解"></a>我的理解</h2><ul><li><p>核心创新：做标签，进行双重判断，记住历史的位置，检验是否原地大转（当在偏转角度阈值内的场景再次出现在记忆队列内就说明在原地打转）</p></li><li><p>不足之处：框架以来VLM能力</p></li><li><p>对我的启发：</p><ol><li><p>RAM做语义锚定 ，我的导航任务也能加一个轻量感知模块，减少后面任务的困难</p></li><li><p>做记忆机制</p></li><li><p>做出决策以后，还可以要进行判断，防止找到假目标</p></li></ol></li></ul><h2 id="疑问"><a href="#疑问" class="headerlink" title="疑问"></a>疑问</h2>]]></content>
+      
+      
+      <categories>
+          
+          <category> 论文笔记 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 论文阅读 </tag>
+            
+            <tag> 具身导航 </tag>
+            
+            <tag> 记忆 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Expand Your SCOPE: Semantic Cognition over Potential-Based Exploration for Embodied Visual Navigation 阅读笔记</title>
+      <link href="/blog/2026/05/19/SCOPE-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/"/>
+      <url>/blog/2026/05/19/SCOPE-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/</url>
+      
+        <content type="html"><![CDATA[<h2 id="一句话总结"><a href="#一句话总结" class="headerlink" title="一句话总结"></a>一句话总结</h2><p>Using <strong>VLM势能估计</strong> + <strong>势能图时空传播</strong> + <strong>自我反思机制</strong>，解决<strong>具身导航中前沿信息利用不充分、智能体漫无目的探索</strong>的问题，在<strong>GOAT-Bench</strong>上实现了<strong>73.7% SR（+4.6%）、53.5 SPL（+4.6%）</strong>。</p><blockquote><p>出处：Abstract, 第1页; Table 1, 第5页</p></blockquote><hr><h2 id="待解决的问题"><a href="#待解决的问题" class="headerlink" title="待解决的问题"></a>待解决的问题</h2><ol><li><strong>VLM&#x2F;LLM空间理解不足</strong>：虽然擅长多模态推理，但未针对密集3D输入训练，限制了对复杂空间关系的理解</li><li><strong>记忆系统只关注已访问区域</strong>：无法将当前观测与未访问的目标相关区域连接起来，导致智能体缺乏清晰的探索线索</li><li><strong>前沿利用不充分</strong>：现有方法（如3D-Mem）直接将前沿快照丢给VLM，缺乏量化评估和结构化时空推理</li></ol><blockquote><p>出处：Section 1, 第1页</p></blockquote><hr><h2 id="核心方法"><a href="#核心方法" class="headerlink" title="核心方法"></a>核心方法</h2><h3 id="三个核心组件"><a href="#三个核心组件" class="headerlink" title="三个核心组件"></a>三个核心组件</h3><table><thead><tr><th>组件</th><th>输入</th><th>处理</th><th>输出</th><th>为什么需要</th></tr></thead><tbody><tr><td><strong>势能估计器</strong></td><td>前沿快照 + 任务目标 q</td><td>VLM评估三维价值（语义丰富度、可探索性、目标相关性）</td><td>势能分数</td><td>将VLM转化为”语义预言机”，量化每个前沿的探索价值</td></tr><tr><td><strong>势能图</strong></td><td>势能分数 + 空间位置</td><td>按距离衰减扩散（公式7-8），结合重访惩罚（公式9）</td><td>每个空间位置的综合探索价值</td><td>实现时空传播，支持长程规划，避免局部循环</td></tr><tr><td><strong>自我反思</strong></td><td>记忆快照-物体对</td><td>VLM验证是否真正匹配目标（公式12）</td><td>确认&#x2F;拒绝</td><td>防止冲动决策，减少VLM幻觉，提升决策可靠性</td></tr></tbody></table><blockquote><p>出处：Section 3.3-3.5, 第3-5页</p></blockquote><h3 id="势能估计的三个维度"><a href="#势能估计的三个维度" class="headerlink" title="势能估计的三个维度"></a>势能估计的三个维度</h3><table><thead><tr><th>维度</th><th>含义</th><th>直觉理解</th></tr></thead><tbody><tr><td><strong>语义丰富度（Semantic Richness）</strong></td><td>区域内物体种类和信息密度</td><td>这个区域”东西多不多”</td></tr><tr><td><strong>可探索性（Explorability）</strong></td><td>是否能通往其他未知区域</td><td>这个区域是不是”交通枢纽”</td></tr><tr><td><strong>目标相关性（Goal Relevance）</strong></td><td>与导航目标的语义关联程度</td><td>目标物体”可能在这里”的程度</td></tr></tbody></table><blockquote><p>出处：Section 3.3, 第3-4页</p></blockquote><h3 id="势能图的传播机制"><a href="#势能图的传播机制" class="headerlink" title="势能图的传播机制"></a>势能图的传播机制</h3><p>前沿 $F_i$ 的势能 $P_i$ 按半径 $R$ 内扩散，周围节点更新公式：</p><p>$$P_{m,n}^t &#x3D; (1 - \alpha_{m,n}^t) \cdot P_{m,n}^{t-1} + \alpha_{m,n}^t \cdot P_i$$</p><p>其中扩散权重：$\alpha &#x3D; \max(0, 1 - d&#x2F;R)$，离得越近影响越大。</p><p>最终节点得分 &#x3D; 势能分 + 语义分 $- \gamma \cdot$ 访问次数（重访惩罚）</p><blockquote><p>出处：Section 3.4, 公式(7)-(9), 第4页</p></blockquote><h3 id="自我反思流程"><a href="#自我反思流程" class="headerlink" title="自我反思流程"></a>自我反思流程</h3><ol><li>主策略生成动作 a_t^(0)</li><li>如果动作选择的是记忆快照-物体对 → 触发验证</li><li>VLM判断：确认 → 执行 &#x2F; 拒绝 → 重新咨询主策略</li><li>可能重复直到确认或达到重试限制</li></ol><blockquote><p>出处：Section 3.5, 公式(10)-(15), 第5页</p></blockquote><hr><h2 id="关键实验结果"><a href="#关键实验结果" class="headerlink" title="关键实验结果"></a>关键实验结果</h2><h3 id="主要结果"><a href="#主要结果" class="headerlink" title="主要结果"></a>主要结果</h3><table><thead><tr><th>数据集</th><th>指标</th><th>SCOPE</th><th>3D-Mem</th><th>提升</th></tr></thead><tbody><tr><td>GOAT-Bench</td><td>SR</td><td><strong>73.7%</strong></td><td>69.1%</td><td>+4.6%</td></tr><tr><td>GOAT-Bench</td><td>SPL</td><td><strong>53.5%</strong></td><td>48.9%</td><td>+4.6%</td></tr><tr><td>A-EQA</td><td>Correctness</td><td><strong>59.1%</strong></td><td>52.6%</td><td>+6.5%</td></tr><tr><td>A-EQA</td><td>Efficiency</td><td>41.0%</td><td>42.0%</td><td>-1.0%（略微牺牲）</td></tr></tbody></table><blockquote><p>出处：Table 1, Table 2, 第5-6页</p></blockquote><h3 id="消融实验"><a href="#消融实验" class="headerlink" title="消融实验"></a>消融实验</h3><table><thead><tr><th>消融设置</th><th>结果</th><th>发现</th></tr></thead><tbody><tr><td>去掉前沿图像输入</td><td>性能几乎不变</td><td>势能分数本身已足够引导决策</td></tr><tr><td>去掉势能图</td><td>SR 70.1%→66.9%, SPL 52.4%→47.0%</td><td>势能图的时空传播是关键</td></tr></tbody></table><blockquote><p>出处：Section 5.3, Figure 5, 第6-7页</p></blockquote><h3 id="校准分析"><a href="#校准分析" class="headerlink" title="校准分析"></a>校准分析</h3><table><thead><tr><th>数据集</th><th>3D-Mem ECE</th><th>SCOPE ECE</th></tr></thead><tbody><tr><td>GOAT-Bench</td><td>11.62</td><td><strong>3.83</strong></td></tr><tr><td>A-EQA</td><td>11.55</td><td><strong>8.12</strong></td></tr></tbody></table><p>ECE越低越好，说明置信度与实际准确率更吻合。</p><blockquote><p>出处：Section 5.2, Table 6, 第7页</p></blockquote><h3 id="自我反思效果"><a href="#自我反思效果" class="headerlink" title="自我反思效果"></a>自我反思效果</h3><ul><li>确认的答案中 <strong>80.6%</strong> 是正确的</li><li>被认为需要重新考虑但最终执行的答案中 <strong>34.3%</strong> 是错误的</li></ul><blockquote><p>出处：Section 5.3, 第7页</p></blockquote><hr><h2 id="创新点"><a href="#创新点" class="headerlink" title="创新点"></a>创新点</h2><blockquote><p>前有方法（3D-Mem）&#x3D; 把前沿快照直接给VLM，缺乏量化的势能评估和时空传播机制，导致智能体在同一房间徘徊、漫无目的探索。</p><p>本文（SCOPE）&#x3D; 通过VLM给前沿打分（势能估计）+ 势能图传播 + 自我反思，实现了有目标、有信息、与目标对齐的导航。</p></blockquote><blockquote><p>出处：Section 1, 第1页；案例对比 Figure 7 vs Figure 8</p></blockquote><hr><h2 id="弱点分析"><a href="#弱点分析" class="headerlink" title="弱点分析"></a>弱点分析</h2><table><thead><tr><th>角度</th><th>弱点</th></tr></thead><tbody><tr><td><strong>依赖什么？</strong></td><td>依赖GPT-4o API，成本高、有延迟、不可控</td></tr><tr><td><strong>在哪测试？</strong></td><td>仅在仿真环境（Habitat + HSSD-200），未在真实机器人上验证</td></tr><tr><td><strong>什么没做？</strong></td><td>未测试本地小模型（Qwen-Omni-Turbo仅17% SR），泛化性存疑</td></tr><tr><td><strong>什么假设太理想？</strong></td><td>VLM判断并非完全可靠（ECE仍有3.8），存在误判风险</td></tr></tbody></table><blockquote><p>出处：Table 3（超参数）; Table 5（VLM对比）; Section 5.2（校准）</p></blockquote><hr><h2 id="机器人视角解释"><a href="#机器人视角解释" class="headerlink" title="机器人视角解释"></a>机器人视角解释</h2><p>如果我是SCOPE机器人，我的工作流程是：</p><ol><li><strong>观察环境</strong>：我站在房间里，环顾四周拍下RGB-D全景照片</li><li><strong>识别前沿</strong>：我发现左边是已探索区域，右边有一扇门通向未知区域——这就是前沿</li><li><strong>势能评估</strong>：我问VLM：”右边这个前沿值不值得去？”VLM回答：”语义丰富度高、可探索性中、目标相关性高，总分9.8”</li><li><strong>势图更新</strong>：我把9.8分”辐射”到周围节点，离我近的地方受影响大，远的地方受影响小</li><li><strong>决策</strong>：我看热力地图，选择分数最高的方向前进</li><li><strong>自我反思</strong>：如果我选了一个”记忆中的物体”作为目标，我会先让VLM确认：”这个物体真的是我要找的吗？”确认了才执行，拒绝了就重新选</li><li><strong>重复</strong>：每一步都重复这个过程，直到找到目标</li></ol><blockquote><p>出处：Figure 1（框架图）; Section 3.2（框架描述）</p></blockquote><hr><h2 id="与3D-Mem的对比"><a href="#与3D-Mem的对比" class="headerlink" title="与3D-Mem的对比"></a>与3D-Mem的对比</h2><table><thead><tr><th>维度</th><th>3D-Mem</th><th>SCOPE</th></tr></thead><tbody><tr><td><strong>核心思想</strong></td><td>存储快照，直接给VLM</td><td>快照+打分+传播+验证</td></tr><tr><td><strong>前沿利用</strong></td><td>启发式选择</td><td>VLM量化评估</td></tr><tr><td><strong>记忆结构</strong></td><td>快照列表</td><td>势能图（带时空传播）</td></tr><tr><td><strong>决策可靠性</strong></td><td>无验证机制</td><td>自我反思确认&#x2F;拒绝</td></tr><tr><td><strong>校准（ECE）</strong></td><td>11.6</td><td>3.8</td></tr><tr><td><strong>GOAT-Bench SR</strong></td><td>69.1%</td><td>73.7%</td></tr></tbody></table><blockquote><p>出处：Table 1, Table 6</p></blockquote><hr><h2 id="关键超参数"><a href="#关键超参数" class="headerlink" title="关键超参数"></a>关键超参数</h2><table><thead><tr><th>参数</th><th>值</th><th>含义</th></tr></thead><tbody><tr><td>相机高度</td><td>1.5m</td><td>人眼高度</td></tr><tr><td>相机倾斜角</td><td>-30°</td><td>略向下看</td></tr><tr><td>图像分辨率</td><td>1280×1280</td><td>高分辨率输入</td></tr><tr><td>HFOV</td><td>120°</td><td>广角视野</td></tr><tr><td>成功距离</td><td>1.0m</td><td>离目标1米内算成功</td></tr><tr><td>VLM模型</td><td>gpt-4o-2024-11-20</td><td>最强VLM</td></tr><tr><td>提示图像尺寸</td><td>360×360</td><td>给VLM的输入尺寸</td></tr><tr><td>最大token数</td><td>4096</td><td>VLM输出长度限制</td></tr></tbody></table><blockquote><p>出处：Table 3, 第10页</p></blockquote><hr><h2 id="待思考的问题"><a href="#待思考的问题" class="headerlink" title="待思考的问题"></a>待思考的问题</h2><ol><li>如果把SCOPE部署到真实机器人上，势能估计的延迟是否可接受？</li><li>能否用更小的本地模型替代GPT-4o，在保持性能的同时降低成本？</li><li>势能图的半径R如何自适应调整？当前是固定值。</li><li>在更大、更复杂的场景（如HM3D）中，SCOPE的性能如何？</li><li>自我反思机制会不会导致过多的”拒绝-重试”循环，影响效率？</li></ol><hr><h2 id="参考信息"><a href="#参考信息" class="headerlink" title="参考信息"></a>参考信息</h2><ul><li><strong>论文</strong>：Wang et al., “Expand Your SCOPE: Semantic Cognition over Potential-Based Exploration for Embodied Visual Navigation”, AAAI 2026</li><li><strong>代码</strong>：<a href="https://github.com/mrwangyou/SCOPE">https://github.com/mrwangyou/SCOPE</a></li><li><strong>机构</strong>：西安交通大学</li><li><strong>日期</strong>：2026年3月12日（arXiv）</li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 论文笔记 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 论文阅读 </tag>
+            
+            <tag> 具身导航 </tag>
+            
+            <tag> VLM </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Do as I can, not as I say Grounding language in robotic affordances</title>
+      <link href="/blog/2026/05/19/SayCan-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/"/>
+      <url>/blog/2026/05/19/SayCan-%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/</url>
+      
+        <content type="html"><![CDATA[<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><ul><li>这篇论文要解决什么问题：<strong>怎么让大模型真正应用于机器人执行现实任务</strong>。大预言模型会说，但机器人不一定会做。补充了&#x3D;&#x3D;语义规划&#x3D;&#x3D;和&#x3D;&#x3D;物理执行&#x3D;&#x3D;的缺口。</li></ul><h2 id="思想"><a href="#思想" class="headerlink" title="思想"></a>思想</h2><ul><li>核心想法：<strong>让大语言模型负责“说下一步该做什么”，让价值函数&#x2F;可供性函数负责“判断这一步现在能不能做”，然后把两者结合起来选技能。让价值函数审查这个建议是否现实可行</strong></li><li>和以前方法的区别：<ul><li>以前：<ul><li>缺乏明确的任务分解过程</li><li>长视野多部任务吃力</li><li>自然语言到连续控制男</li></ul></li><li>现在：<ul><li>高层做任务分解和技能选择</li><li>机器人已有技能负责执行</li><li>中间价值函数做现实约束</li></ul></li></ul></li></ul><p>总的来说：它把大语言模型输出的“任务有用性”和机器人价值函数输出的“现实可行性”统一到同一个决策框架里。</p><h2 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h2><ul><li><p>流程：</p><ol><li><p>输入用户指令、当前状态、候选技能集</p></li><li><p>大语言模型判断每个技能<strong>是否适合作为下一步</strong></p></li><li><p>价值函数判断每个技能<strong>当前能否成功执行</strong></p></li><li><p>将两者分数相乘</p></li><li><p>选择分数最高的技能执行</p></li><li><p>更新状态，重复以上过程</p></li><li><p>直到输出“完成”</p></li></ol></li></ul><h2 id="关键公式"><a href="#关键公式" class="headerlink" title="关键公式"></a>关键公式</h2><ul><li>公式1：$$p(ci∣i,s,ℓπ)∝p(cπ∣s,ℓπ)p(ℓπ∣i)$$</li><li>含义：<ol><li>$p(\ell_\pi \mid i)$：这个技能作为当前任务下一步，<strong>合不合理</strong></li><li>$p(c_\pi \mid s,\ell_\pi)$：这个技能在当前状态下，<strong>能不能做成</strong></li><li>两者相乘后，就得到这个技能既<strong>有用</strong>又<strong>可行</strong>的综合分数。</li><li>系统选取策略$$\pi &#x3D; \arg\max_{\pi \in \Pi} p(c_\pi \mid s, \ell_\pi), p(\ell_\pi \mid i)$$</li></ol></li></ul><h2 id="训练与推理"><a href="#训练与推理" class="headerlink" title="训练与推理"></a>训练与推理</h2><ul><li>怎么训练：</li><li><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260407200006106.png" alt="image-20260407200006106"></li><li>怎么推理：任务相关性与技能可行性的乘积决策</li></ul><h2 id="结果"><a href="#结果" class="headerlink" title="结果"></a>结果</h2><ul><li>主要实验结论：<strong>将大语言模型的高层语义规划，与价值函数提供的可供性约束结合起来，能够显著提升机器人完成现实世界长视野自然语言任务的能力。</strong></li></ul><h2 id="我的总结"><a href="#我的总结" class="headerlink" title="我的总结"></a>我的总结</h2><ul><li><p>贡献：</p><p><img src="https://raw.githubusercontent.com/heyutiana/images/master/images/image-20260407201200305.png" alt="image-20260407201200305"></p></li><li><p>局限：SayCan 的核心局限不在“不会规划”，而在于底层技能能力有限、价值估计不总准确，以及长视野任务和闭环反馈仍不够强。</p></li><li><p>启发：</p><pre><code>   1. 可供行函数给现实一个过滤器。   2. 高层语义规划 + 低层控制，这条路是对的。   3. 从强化学习的数学公式找突破点。价值函数被他定义为了可供性函数。SayCan 的关键突破在于：将强化学习中的价值函数，在成功=1、失败=0的稀疏奖励设定下，重新解释为技能成功概率，即可供性函数</code></pre></li></ul><h2 id="问题-1"><a href="#问题-1" class="headerlink" title="问题"></a>问题</h2><p>Q：我相知到这个可供行函数和这个价值函数是怎么联系在一起的？</p><p>A：</p><blockquote><p><strong>可供性函数，本质上就是一种特殊定义下的价值函数。</strong></p><p>不是“有点像”，而是作者基本就在这么用。</p><hr><h2 id="1-先分开看这两个词"><a href="#1-先分开看这两个词" class="headerlink" title="1. 先分开看这两个词"></a>1. 先分开看这两个词</h2><h3 id="价值函数"><a href="#价值函数" class="headerlink" title="价值函数"></a>价值函数</h3><p>在强化学习里，价值函数表示：</p><p><strong>从当前状态出发，未来能拿到多少回报。</strong></p><p>比如 Q 函数：<br>$$<br>Q^\pi(s,a)<br>$$<br>表示在状态 $s$ 做动作 $a$，之后一直按策略 $\pi$ 行动，最终得到的<strong>累计奖励期望</strong>。</p><hr><h3 id="可供性函数"><a href="#可供性函数" class="headerlink" title="可供性函数"></a>可供性函数</h3><p>可供性函数表示：</p><p><strong>当前状态下，这个动作&#x2F;技能做不做得成。</strong></p><p>在 SayCan 里写成：<br>$$<br>p(c_\pi \mid s, \ell_\pi)<br>$$<br>意思是：</p><p>在状态 $s$ 下，执行文本标签为 $\ell_\pi$ 的技能 $\pi$，成功完成的概率。</p><hr><h1 id="2-它们为什么会联系起来"><a href="#2-它们为什么会联系起来" class="headerlink" title="2. 它们为什么会联系起来"></a>2. 它们为什么会联系起来</h1><p>关键在于：<strong>奖励怎么定义。</strong></p><p>论文说，他们训练低层技能时用了<strong>稀疏奖励</strong>：</p><ul><li>技能成功完成：奖励 1.0</li><li>技能失败：奖励 0.0</li></ul><p>这时，价值函数在学什么？</p><p>它学的是：</p><p><strong>从当前状态出发，最终拿到 1 的概率有多大。</strong></p><p>而因为这里只有两种结果：</p><ul><li>成功拿到 1</li><li>失败拿到 0</li></ul><p>所以“未来期望回报”就等于“成功概率”。</p><hr><h2 id="3-用数学直觉看"><a href="#3-用数学直觉看" class="headerlink" title="3. 用数学直觉看"></a>3. 用数学直觉看</h2><p>假设某个技能 $\pi$ 的最终奖励定义为：<br>$$<br>R &#x3D;<br>\begin{cases}<br>1, &amp; \text{技能成功} \<br>0, &amp; \text{技能失败}<br>\end{cases}<br>$$<br>那么从当前状态 $s$ 出发，这个技能的价值函数就是：<br>$$<br>V^\pi(s)&#x3D;\mathbb{E}[R \mid s]<br>$$<br>因为 $R$ 只会取 0 或 1，<br> 所以这个期望其实就是：<br>$$<br>V^\pi(s)&#x3D;P(R&#x3D;1\mid s)<br>$$<br>也就是：<br>$$<br>V^\pi(s)&#x3D;P(\text{技能成功}\mid s)<br>$$<br>这不就是可供性函数吗？</p><hr><h1 id="4-所以在这篇论文里发生了什么"><a href="#4-所以在这篇论文里发生了什么" class="headerlink" title="4. 所以在这篇论文里发生了什么"></a>4. 所以在这篇论文里发生了什么</h1><p>作者先从强化学习角度说：</p><ul><li>我们学习一个价值函数</li><li>用 TD 方法来学它</li></ul><p>然后作者马上说：</p><p>在<strong>无折扣、稀疏奖励</strong>情况下，<br> 这个通过 RL 学到的价值函数，就对应于一个可供性函数，它告诉我们：</p><p><strong>给定状态下，某项技能是否可能实现。</strong> </p><p>这句话其实就是在说：</p><p><strong>RL 的价值函数，被他们解释成了“技能成功概率估计器”。</strong></p><hr><h1 id="5-为什么要这么做"><a href="#5-为什么要这么做" class="headerlink" title="5. 为什么要这么做"></a>5. 为什么要这么做</h1><p>因为 SayCan 需要一个模块告诉 LLM：</p><p><strong>“这一步虽然听起来合理，但现在到底能不能做？”</strong></p><p>而价值函数天然可以提供这种信息。</p><p>比如当前场景里：</p><ul><li>海绵就在桌上</li><li>机器人手是空的</li></ul><p>那“拾取海绵”的价值函数就高，<br> 也就是可供性高。</p><p>如果当前：</p><ul><li>海绵根本不在场景里</li><li>机器人手里已经拿着别的东西</li></ul><p>那“拾取海绵”的价值函数就低，<br> 也就是可供性低。图 2 就在可视化这种技能价值空间：有物体时某些“拾取”技能价值高，空场景里这些技能价值低。</p><hr><h1 id="6-一句话说透"><a href="#6-一句话说透" class="headerlink" title="6. 一句话说透"></a>6. 一句话说透</h1><p>一般强化学习里的价值函数回答的是：</p><p><strong>“这个状态&#x2F;动作未来值不值钱？”</strong></p><p>而在 SayCan 这种成功&#x3D;1、失败&#x3D;0 的设定里，这个问题就变成了：</p><p><strong>“这个技能从当前状态出发，最终能不能成功？”</strong></p><p>于是：</p><p><strong>价值函数 &#x3D; 成功概率估计 &#x3D; 可供性函数。</strong></p><hr><h1 id="7-你可以这样记"><a href="#7-你可以这样记" class="headerlink" title="7. 你可以这样记"></a>7. 你可以这样记</h1><h2 id="普通-RL-里"><a href="#普通-RL-里" class="headerlink" title="普通 RL 里"></a>普通 RL 里</h2><p>价值函数看的是：</p><ul><li>长期累计奖励</li></ul><h2 id="SayCan-里"><a href="#SayCan-里" class="headerlink" title="SayCan 里"></a>SayCan 里</h2><p>因为奖励被设计成：</p><ul><li>成功 1</li><li>失败 0</li></ul><p>所以长期累计奖励就退化成了：</p><ul><li>成功概率</li></ul><p>而这个成功概率，正好就是作者想要的“可供性”。</p><hr><h1 id="8-在论文的整个方法里它怎么用"><a href="#8-在论文的整个方法里它怎么用" class="headerlink" title="8. 在论文的整个方法里它怎么用"></a>8. 在论文的整个方法里它怎么用</h1><p>SayCan 每一步都对每个技能算两个分数：</p><h3 id="语言模型分数"><a href="#语言模型分数" class="headerlink" title="语言模型分数"></a>语言模型分数</h3><p>$$<br>p(\ell_\pi \mid i)<br>$$</p><p>表示这步对完成用户指令有没有帮助。</p><h3 id="可供性分数"><a href="#可供性分数" class="headerlink" title="可供性分数"></a>可供性分数</h3><p>$$<br>p(c_\pi \mid s,\ell_\pi)<br>$$</p><p>表示这步当前能不能成功。</p><p>而这个可供性分数，其实就是他们训练出来的价值函数。</p><p>最后相乘选技能：<br>$$<br>\pi &#x3D; \arg\max_{\pi \in \Pi} p(c_\pi \mid s,\ell_\pi),p(\ell_\pi \mid i)<br>$$<br>也就是：</p><p><strong>该做 × 能做。</strong> </p><hr><h1 id="9-最后给你一个最直观的例子"><a href="#9-最后给你一个最直观的例子" class="headerlink" title="9. 最后给你一个最直观的例子"></a>9. 最后给你一个最直观的例子</h1><p>假设技能是：</p><p><strong>“拾取苹果”</strong></p><p>当前状态有两种：</p><h3 id="状态-A"><a href="#状态-A" class="headerlink" title="状态 A"></a>状态 A</h3><ul><li>苹果就在桌上</li><li>机器人离得近</li><li>手是空的</li></ul><p>那价值函数会给高分，<br> 因为最终成功概率高。<br> 所以可供性也高。</p><h3 id="状态-B"><a href="#状态-B" class="headerlink" title="状态 B"></a>状态 B</h3><ul><li>场景里没有苹果</li></ul><p>那价值函数会给低分，<br> 因为几乎不可能成功。<br> 所以可供性也低。</p><p>所以这里“价值高不高”，并不是抽象的“长期很赚”，<br> 而就是非常具体的：</p><p><strong>这个技能现在成不成。</strong></p><hr><h2 id="一句话总结"><a href="#一句话总结" class="headerlink" title="一句话总结"></a>一句话总结</h2><p><strong>在 SayCan 里，由于奖励被定义为“成功&#x3D;1，失败&#x3D;0”，所以强化学习学到的价值函数就等于技能成功概率，而这个成功概率就是可供性函数。</strong> </p><p>你要是愿意，我下一步可以继续给你讲：</p><p><strong>为什么论文里用的是“技能级价值函数”，而不是普通动作级 Q 函数。</strong></p></blockquote>]]></content>
+      
+      
+      <categories>
+          
+          <category> 论文笔记 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 论文阅读 </tag>
+            
+            <tag> 机器人 </tag>
+            
+            <tag> LLM </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+  
+  
+</search>
